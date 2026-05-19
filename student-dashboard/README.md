@@ -30,7 +30,7 @@
 ### 1. Clone & Install
 
 ```bash
-git clone https://github.com/lamichhane013/student-performance-dashboard.git
+git clone https://github.com/lamichhane013/capstone.git
 cd student-performance-dashboard
 npm install
 ```
