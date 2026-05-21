@@ -34,15 +34,14 @@ const PERF_COLORS: Record<string, string> = {
 // Shared tooltip style
 const tooltipStyle = {
   contentStyle: {
-    backgroundColor: '#111827',
-    border: '1px solid #1e293b',
-    borderRadius: '10px',
-    padding: '10px 14px',
+    backgroundColor: '#ffffff',
+    border: '1px solid #e5e7eb',
+    borderRadius: '6px',
+    padding: '8px 12px',
     fontSize: '12px',
-    fontFamily: 'var(--font-syne)',
-    color: '#e2e8f0',
+    color: '#374151',
   },
-  cursor: { fill: 'rgba(148, 163, 184, 0.04)' },
+  cursor: { fill: 'rgba(0, 0, 0, 0.03)' },
 }
 
 // --- GPA Distribution Bar Chart ---
@@ -50,7 +49,7 @@ export function GPADistributionChart({ data }: { data: { range: string; count: n
   return (
     <ResponsiveContainer width="100%" height={200}>
       <BarChart data={data} margin={{ top: 5, right: 10, left: -20, bottom: 0 }}>
-        <CartesianGrid strokeDasharray="3 3" stroke="#1e293b" vertical={false} />
+        <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" vertical={false} />
         <XAxis dataKey="range" tick={{ fill: '#64748b', fontSize: 11 }} axisLine={false} tickLine={false} />
         <YAxis tick={{ fill: '#64748b', fontSize: 11 }} axisLine={false} tickLine={false} />
         <Tooltip {...tooltipStyle} />
@@ -75,12 +74,12 @@ export function AttendanceVsGPAChart({ data }: { data: { name: string; attendanc
   return (
     <ResponsiveContainer width="100%" height={220}>
       <ScatterChart margin={{ top: 5, right: 10, left: -20, bottom: 0 }}>
-        <CartesianGrid strokeDasharray="3 3" stroke="#1e293b" />
+        <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" />
         <XAxis dataKey="attendance" name="Attendance" unit="%" tick={{ fill: '#64748b', fontSize: 11 }} axisLine={false} tickLine={false} domain={[40, 100]} />
         <YAxis dataKey="gpa" name="GPA" tick={{ fill: '#64748b', fontSize: 11 }} axisLine={false} tickLine={false} domain={[0, 4]} />
         <Tooltip
           {...tooltipStyle}
-          cursor={{ strokeDasharray: '3 3', stroke: '#334155' }}
+          cursor={{ strokeDasharray: '3 3', stroke: '#d1d5db' }}
           formatter={(value, name) => [
             name === 'gpa' ? `${Number(value).toFixed(2)} GPA` : `${value}%`,
             name === 'gpa' ? 'Predicted GPA' : 'Attendance',
@@ -106,12 +105,12 @@ export function StudyHoursVsGPAChart({ data }: { data: { name: string; study_hou
   return (
     <ResponsiveContainer width="100%" height={220}>
       <ScatterChart margin={{ top: 5, right: 10, left: -20, bottom: 0 }}>
-        <CartesianGrid strokeDasharray="3 3" stroke="#1e293b" />
+        <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" />
         <XAxis dataKey="study_hours" name="Study Hours" unit="h" tick={{ fill: '#64748b', fontSize: 11 }} axisLine={false} tickLine={false} />
         <YAxis dataKey="gpa" name="GPA" tick={{ fill: '#64748b', fontSize: 11 }} axisLine={false} tickLine={false} domain={[0, 4]} />
         <Tooltip
           {...tooltipStyle}
-          cursor={{ strokeDasharray: '3 3', stroke: '#334155' }}
+          cursor={{ strokeDasharray: '3 3', stroke: '#d1d5db' }}
           formatter={(value, name) => [
             name === 'gpa' ? `${Number(value).toFixed(2)} GPA` : `${value} hrs`,
             name === 'gpa' ? 'Predicted GPA' : 'Study Hours',
@@ -128,7 +127,7 @@ export function GradePerformanceChart({ data }: { data: { grade: string; avgGPA:
   return (
     <ResponsiveContainer width="100%" height={200}>
       <BarChart data={data} margin={{ top: 5, right: 10, left: -20, bottom: 0 }}>
-        <CartesianGrid strokeDasharray="3 3" stroke="#1e293b" vertical={false} />
+        <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" vertical={false} />
         <XAxis dataKey="grade" tick={{ fill: '#64748b', fontSize: 11 }} axisLine={false} tickLine={false} />
         <YAxis domain={[0, 4]} tick={{ fill: '#64748b', fontSize: 11 }} axisLine={false} tickLine={false} />
         <Tooltip {...tooltipStyle} formatter={(v) => [`${Number(v).toFixed(2)} avg GPA`, 'Average GPA']} />
@@ -208,7 +207,7 @@ export function ECAAnalyticsChart({ data }: { data: { label: string; count: numb
   return (
     <ResponsiveContainer width="100%" height={200}>
       <BarChart data={data} margin={{ top: 5, right: 10, left: -20, bottom: 20 }}>
-        <CartesianGrid strokeDasharray="3 3" stroke="#1e293b" vertical={false} />
+        <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" vertical={false} />
         <XAxis dataKey="label" tick={{ fill: '#64748b', fontSize: 10 }} axisLine={false} tickLine={false} angle={-15} textAnchor="end" />
         <YAxis yAxisId="left" tick={{ fill: '#64748b', fontSize: 11 }} axisLine={false} tickLine={false} />
         <YAxis yAxisId="right" orientation="right" domain={[0, 4]} tick={{ fill: '#64748b', fontSize: 11 }} axisLine={false} tickLine={false} />
@@ -226,7 +225,7 @@ export function ScoreBreakdownRadar({ data }: { data: { subject: string; score: 
   return (
     <ResponsiveContainer width="100%" height={280}>
       <RadarChart cx="50%" cy="50%" outerRadius="75%" data={data}>
-        <PolarGrid stroke="#1e293b" />
+        <PolarGrid stroke="#e5e7eb" />
         <PolarAngleAxis dataKey="subject" tick={{ fill: '#94a3b8', fontSize: 12 }} />
         <PolarRadiusAxis angle={90} domain={[0, 100]} tick={{ fill: '#64748b', fontSize: 10 }} />
         <Radar name="Score" dataKey="score" stroke={COLORS.blue} fill={COLORS.blue} fillOpacity={0.25} strokeWidth={2} />

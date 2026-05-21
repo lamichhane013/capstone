@@ -6,8 +6,7 @@ import {
   ChevronLeft, ChevronRight, X, Users, Save, Loader2
 } from 'lucide-react'
 import { Card, Badge, Skeleton, EmptyState, PageHeader } from '@/components/ui/Cards'
-import { cn, formatGPA, getRiskBadgeClass, getPerformanceBadgeClass, exportToCSV, debounce } from '@/utils/helpers'
-import { predictPerformance } from '@/lib/prediction'
+import { formatGPA, getRiskBadgeClass, getPerformanceBadgeClass, exportToCSV, debounce } from '@/utils/helpers'
 import toast from 'react-hot-toast'
 import type { Student } from '@/lib/database.types'
 
@@ -36,26 +35,36 @@ function EditModal({ student, onClose, onSave }: {
 
   const handleSave = async () => {
     setSaving(true)
-    const prediction = predictPerformance({
-      attendance: form.attendance,
-      study_hours: form.study_hours,
-      assignment_score: form.assignment_score,
-      participation: form.participation,
-      previous_gpa: form.previous_gpa,
-      eca_participation: form.eca_participation,
-    })
-    await onSave({
-      ...form,
-      predicted_gpa: prediction.predicted_gpa,
-      risk_level: prediction.risk_level,
-      performance_category: prediction.performance_category,
-    })
-    setSaving(false)
+    try {
+      const res = await fetch('/api/predict', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          attendance: form.attendance,
+          study_hours: form.study_hours,
+          assignment_score: form.assignment_score,
+          participation: form.participation,
+          previous_gpa: form.previous_gpa,
+          eca_participation: form.eca_participation,
+        }),
+      })
+      if (!res.ok) throw new Error('Prediction failed')
+      const data = await res.json()
+      const prediction = data.prediction
+      await onSave({
+        ...form,
+        predicted_gpa: prediction.predicted_gpa,
+        risk_level: prediction.risk_level,
+        performance_category: prediction.performance_category,
+      })
+    } finally {
+      setSaving(false)
+    }
   }
 
   const field = (key: keyof typeof form, label: string, type = 'number', min?: number, max?: number) => (
     <div>
-      <label className="block text-xs text-slate-400 mb-1 font-medium">{label}</label>
+      <label className="block text-xs text-gray-600 mb-1">{label}</label>
       <input
         type={type}
         value={form[key]}
@@ -63,17 +72,17 @@ function EditModal({ student, onClose, onSave }: {
         min={min}
         max={max}
         step={type === 'number' ? '0.1' : undefined}
-        className="w-full px-3 py-2 rounded-lg bg-slate-900 border border-slate-700 text-slate-200 text-sm input-focus"
+        className="w-full px-3 py-2 rounded border border-gray-300 text-gray-900 text-sm focus:outline-none focus:border-blue-500"
       />
     </div>
   )
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/70 backdrop-blur-sm">
-      <div className="bg-[#111827] border border-slate-800 rounded-2xl w-full max-w-lg max-h-[90vh] overflow-y-auto shadow-2xl animate-slide-up">
-        <div className="sticky top-0 bg-[#111827] px-6 py-4 border-b border-slate-800 flex items-center justify-between">
-          <h2 className="text-base font-bold text-white">Edit Student</h2>
-          <button onClick={onClose} className="text-slate-500 hover:text-slate-200 transition-colors">
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50">
+      <div className="bg-white border border-gray-200 rounded-lg w-full max-w-lg max-h-[90vh] overflow-y-auto shadow-lg">
+        <div className="px-6 py-4 border-b border-gray-200 flex items-center justify-between">
+          <h2 className="text-base font-bold text-gray-900">Edit Student</h2>
+          <button onClick={onClose} className="text-gray-400 hover:text-gray-600">
             <X size={18} />
           </button>
         </div>
@@ -81,21 +90,21 @@ function EditModal({ student, onClose, onSave }: {
           <div className="col-span-2">{field('full_name', 'Full Name', 'text')}</div>
           {field('age', 'Age', 'number', 10, 25)}
           <div>
-            <label className="block text-xs text-slate-400 mb-1 font-medium">Gender</label>
+            <label className="block text-xs text-gray-600 mb-1">Gender</label>
             <select
               value={form.gender}
               onChange={(e) => setForm({ ...form, gender: e.target.value })}
-              className="w-full px-3 py-2 rounded-lg bg-slate-900 border border-slate-700 text-slate-200 text-sm input-focus"
+              className="w-full px-3 py-2 rounded border border-gray-300 text-gray-900 text-sm focus:outline-none focus:border-blue-500"
             >
               {['Male', 'Female', 'Non-binary'].map((g) => <option key={g}>{g}</option>)}
             </select>
           </div>
           <div>
-            <label className="block text-xs text-slate-400 mb-1 font-medium">Grade</label>
+            <label className="block text-xs text-gray-600 mb-1">Grade</label>
             <select
               value={form.grade}
               onChange={(e) => setForm({ ...form, grade: e.target.value })}
-              className="w-full px-3 py-2 rounded-lg bg-slate-900 border border-slate-700 text-slate-200 text-sm input-focus"
+              className="w-full px-3 py-2 rounded border border-gray-300 text-gray-900 text-sm focus:outline-none focus:border-blue-500"
             >
               {['9', '10', '11', '12'].map((g) => <option key={g}>{g}</option>)}
             </select>
@@ -107,17 +116,17 @@ function EditModal({ student, onClose, onSave }: {
           {field('participation', 'Participation %', 'number', 0, 100)}
           {field('eca_participation', 'ECA Participation %', 'number', 0, 100)}
         </div>
-        <div className="px-6 py-4 border-t border-slate-800 flex justify-end gap-3">
-          <button onClick={onClose} className="px-4 py-2 rounded-lg text-sm text-slate-400 hover:text-slate-200 border border-slate-700 transition-all">
+        <div className="px-6 py-4 border-t border-gray-200 flex justify-end gap-3">
+          <button onClick={onClose} className="px-4 py-2 rounded text-sm text-gray-600 border border-gray-300 hover:bg-gray-50">
             Cancel
           </button>
           <button
             onClick={handleSave}
             disabled={saving}
-            className="flex items-center gap-2 px-4 py-2 rounded-lg text-sm bg-brand-500 hover:bg-brand-400 text-white transition-all disabled:opacity-50"
+            className="flex items-center gap-2 px-4 py-2 rounded text-sm bg-blue-600 hover:bg-blue-700 text-white disabled:opacity-50"
           >
             {saving ? <Loader2 size={14} className="animate-spin" /> : <Save size={14} />}
-            Save Changes
+            Save
           </button>
         </div>
       </div>
@@ -128,20 +137,17 @@ function EditModal({ student, onClose, onSave }: {
 // --- Delete Confirm Dialog ---
 function DeleteDialog({ name, onConfirm, onClose }: { name: string; onConfirm: () => void; onClose: () => void }) {
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/70 backdrop-blur-sm">
-      <div className="bg-[#111827] border border-slate-800 rounded-2xl p-6 w-full max-w-sm shadow-2xl animate-slide-up">
-        <div className="w-12 h-12 rounded-xl bg-rose-500/15 border border-rose-500/30 flex items-center justify-center mb-4">
-          <Trash2 size={20} className="text-rose-400" />
-        </div>
-        <h3 className="text-base font-bold text-white mb-1">Delete Student?</h3>
-        <p className="text-slate-400 text-sm mb-6">
-          Are you sure you want to delete <strong className="text-slate-200">{name}</strong>? This action cannot be undone.
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50">
+      <div className="bg-white border border-gray-200 rounded-lg p-6 w-full max-w-sm shadow-lg">
+        <h3 className="text-base font-bold text-gray-900 mb-2">Delete Student?</h3>
+        <p className="text-gray-600 text-sm mb-6">
+          Are you sure you want to delete <strong>{name}</strong>? This cannot be undone.
         </p>
         <div className="flex gap-3">
-          <button onClick={onClose} className="flex-1 px-4 py-2 rounded-lg text-sm text-slate-400 border border-slate-700 hover:text-slate-200 transition-all">
+          <button onClick={onClose} className="flex-1 px-4 py-2 rounded text-sm text-gray-600 border border-gray-300 hover:bg-gray-50">
             Cancel
           </button>
-          <button onClick={onConfirm} className="flex-1 px-4 py-2 rounded-lg text-sm bg-rose-500 hover:bg-rose-400 text-white transition-all">
+          <button onClick={onConfirm} className="flex-1 px-4 py-2 rounded text-sm bg-red-600 hover:bg-red-700 text-white">
             Delete
           </button>
         </div>
@@ -181,7 +187,6 @@ export default function StudentsPage() {
 
   useEffect(() => { fetchStudents(page, search, grade) }, [page, grade])
 
-  // Debounced search
   const debouncedSearch = useCallback(
     debounce((q: string) => {
       setPage(1)
@@ -240,19 +245,19 @@ export default function StudentsPage() {
   }
 
   return (
-    <div className="flex flex-col h-full">
+    <div>
       <PageHeader>
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
           <div>
-            <h1 className="text-xl font-bold text-[var(--text-primary)]">Students</h1>
-            <p className="text-slate-500 text-sm">{total} total records</p>
+            <h1 className="text-xl font-bold text-gray-900">Students</h1>
+            <p className="text-sm text-gray-500">{total} total records</p>
           </div>
           <div className="flex items-center gap-2">
-            <button onClick={handleExport} className="flex items-center gap-2 px-3 py-2 rounded-lg text-sm text-slate-400 hover:text-slate-200 border border-slate-700/60 transition-all">
+            <button onClick={handleExport} className="flex items-center gap-2 px-3 py-2 rounded text-sm text-gray-600 border border-gray-300 hover:bg-gray-50">
               <Download size={15} />
               <span className="hidden sm:inline">Export</span>
             </button>
-            <a href="/predict" className="flex items-center gap-2 px-3 py-2 rounded-lg text-sm bg-brand-500 hover:bg-brand-400 text-white transition-all">
+            <a href="/predict" className="flex items-center gap-2 px-3 py-2 rounded text-sm bg-blue-600 hover:bg-blue-700 text-white">
               <Plus size={15} />
               <span>Add Student</span>
             </a>
@@ -260,37 +265,32 @@ export default function StudentsPage() {
         </div>
       </PageHeader>
 
-      <div className="p-6 space-y-4 animate-fade-in">
+      <div className="p-6 space-y-4">
         {/* Filters */}
         <div className="flex flex-col sm:flex-row gap-3">
           <div className="relative flex-1 max-w-sm">
-            <Search size={15} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-500" />
+            <Search size={15} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
             <input
               type="text"
               placeholder="Search students..."
               value={search}
               onChange={handleSearchChange}
-              className="w-full pl-9 pr-4 py-2.5 rounded-lg bg-[var(--bg-card)] border border-slate-800 text-slate-200 text-sm placeholder:text-slate-600 input-focus"
+              className="w-full pl-9 pr-4 py-2 rounded border border-gray-300 text-gray-900 text-sm placeholder:text-gray-400 focus:outline-none focus:border-blue-500"
             />
             {search && (
-              <button onClick={() => { setSearch(''); fetchStudents(1, '', grade) }} className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-500 hover:text-slate-300">
+              <button onClick={() => { setSearch(''); fetchStudents(1, '', grade) }} className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600">
                 <X size={14} />
               </button>
             )}
           </div>
           <div className="flex items-center gap-2">
-            <Filter size={14} className="text-slate-500" />
+            <Filter size={14} className="text-gray-400" />
             <div className="flex gap-1">
               {GRADES.map((g) => (
                 <button
                   key={g}
                   onClick={() => handleGradeChange(g)}
-                  className={cn(
-                    'px-3 py-1.5 rounded-lg text-xs font-medium transition-all border',
-                    grade === g
-                      ? 'bg-brand-500/15 text-brand-400 border-brand-500/30'
-                      : 'text-slate-500 border-slate-700/50 hover:border-slate-600 hover:text-slate-300'
-                  )}
+                  className={`px-3 py-1.5 rounded text-xs border ${grade === g ? 'bg-blue-600 text-white border-blue-600' : 'text-gray-600 border-gray-300 hover:bg-gray-50'}`}
                 >
                   {g === 'all' ? 'All' : `Gr ${g}`}
                 </button>
@@ -304,9 +304,9 @@ export default function StudentsPage() {
           <div className="overflow-x-auto">
             <table className="w-full text-sm">
               <thead>
-                <tr className="border-b border-slate-800/80">
+                <tr className="border-b border-gray-200 bg-gray-50">
                   {['Student', 'Grade', 'GPA', 'Attendance', 'Study Hrs', 'Assignment', 'Predicted GPA', 'Risk', 'Performance', 'Actions'].map((h) => (
-                    <th key={h} className="text-left px-4 py-3 text-xs font-semibold text-slate-500 whitespace-nowrap">
+                    <th key={h} className="text-left px-4 py-3 text-xs font-semibold text-gray-500 whitespace-nowrap">
                       {h}
                     </th>
                   ))}
@@ -315,7 +315,7 @@ export default function StudentsPage() {
               <tbody>
                 {loading ? (
                   Array.from({ length: PAGE_SIZE }).map((_, i) => (
-                    <tr key={i} className="border-b border-slate-800/40">
+                    <tr key={i} className="border-b border-gray-100">
                       {Array.from({ length: 10 }).map((__, j) => (
                         <td key={j} className="px-4 py-3">
                           <Skeleton className="h-4 w-20" />
@@ -329,35 +329,25 @@ export default function StudentsPage() {
                       <EmptyState
                         icon={<Users size={28} />}
                         title="No students found"
-                        description={search ? "Try adjusting your search or filters" : "Add students via AI Predict or seed sample data from the dashboard"}
+                        description={search ? "Try adjusting your search or filters" : "Add students via Predict or seed sample data from the dashboard"}
                       />
                     </td>
                   </tr>
                 ) : (
                   students.map((s) => (
-                    <tr key={s.id} className="border-b border-slate-800/40 table-row-hover">
+                    <tr key={s.id} className="border-b border-gray-100 table-row-hover">
                       <td className="px-4 py-3">
                         <div>
-                          <p className="font-medium text-slate-200">{s.full_name}</p>
-                          <p className="text-xs text-slate-500">{s.gender}, {s.age}y</p>
+                          <p className="font-medium text-gray-800">{s.full_name}</p>
+                          <p className="text-xs text-gray-400">{s.gender}, {s.age}y</p>
                         </div>
                       </td>
-                      <td className="px-4 py-3 text-slate-400">{s.grade}</td>
-                      <td className="px-4 py-3 text-slate-300 font-mono text-xs">{formatGPA(s.previous_gpa)}</td>
-                      <td className="px-4 py-3">
-                        <div className="flex items-center gap-2">
-                          <div className="w-12 h-1.5 rounded-full bg-slate-700 overflow-hidden">
-                            <div
-                              className={cn('h-full rounded-full', s.attendance >= 85 ? 'bg-emerald-400' : s.attendance >= 70 ? 'bg-amber-400' : 'bg-rose-400')}
-                              style={{ width: `${s.attendance}%` }}
-                            />
-                          </div>
-                          <span className="text-xs text-slate-400">{s.attendance}%</span>
-                        </div>
-                      </td>
-                      <td className="px-4 py-3 text-slate-400 text-xs">{s.study_hours}h</td>
-                      <td className="px-4 py-3 text-slate-400 text-xs">{s.assignment_score}%</td>
-                      <td className="px-4 py-3 font-bold font-mono text-xs text-brand-400">{formatGPA(s.predicted_gpa)}</td>
+                      <td className="px-4 py-3 text-gray-600">{s.grade}</td>
+                      <td className="px-4 py-3 text-gray-700 text-xs">{formatGPA(s.previous_gpa)}</td>
+                      <td className="px-4 py-3 text-gray-600 text-xs">{s.attendance}%</td>
+                      <td className="px-4 py-3 text-gray-600 text-xs">{s.study_hours}h</td>
+                      <td className="px-4 py-3 text-gray-600 text-xs">{s.assignment_score}%</td>
+                      <td className="px-4 py-3 font-bold text-xs text-blue-600">{formatGPA(s.predicted_gpa)}</td>
                       <td className="px-4 py-3">
                         <Badge className={getRiskBadgeClass(s.risk_level)}>{s.risk_level ?? '—'}</Badge>
                       </td>
@@ -366,10 +356,10 @@ export default function StudentsPage() {
                       </td>
                       <td className="px-4 py-3">
                         <div className="flex items-center gap-1">
-                          <button onClick={() => setEditingStudent(s)} className="p-1.5 rounded-lg text-slate-500 hover:text-brand-400 hover:bg-brand-500/10 transition-all">
+                          <button onClick={() => setEditingStudent(s)} className="p-1 rounded text-gray-400 hover:text-blue-600 hover:bg-blue-50">
                             <Pencil size={14} />
                           </button>
-                          <button onClick={() => setDeletingStudent(s)} className="p-1.5 rounded-lg text-slate-500 hover:text-rose-400 hover:bg-rose-500/10 transition-all">
+                          <button onClick={() => setDeletingStudent(s)} className="p-1 rounded text-gray-400 hover:text-red-600 hover:bg-red-50">
                             <Trash2 size={14} />
                           </button>
                         </div>
@@ -383,15 +373,15 @@ export default function StudentsPage() {
 
           {/* Pagination */}
           {totalPages > 1 && (
-            <div className="flex items-center justify-between px-4 py-3 border-t border-slate-800/60">
-              <span className="text-xs text-slate-500">
+            <div className="flex items-center justify-between px-4 py-3 border-t border-gray-200">
+              <span className="text-xs text-gray-500">
                 Showing {(page - 1) * PAGE_SIZE + 1}–{Math.min(page * PAGE_SIZE, total)} of {total}
               </span>
               <div className="flex items-center gap-1">
                 <button
                   onClick={() => setPage((p) => Math.max(1, p - 1))}
                   disabled={page === 1}
-                  className="p-1.5 rounded-lg text-slate-500 hover:text-slate-200 disabled:opacity-30 transition-all"
+                  className="p-1.5 rounded text-gray-500 hover:text-gray-800 disabled:opacity-30"
                 >
                   <ChevronLeft size={16} />
                 </button>
@@ -401,10 +391,7 @@ export default function StudentsPage() {
                     <button
                       key={p}
                       onClick={() => setPage(p)}
-                      className={cn(
-                        'w-7 h-7 rounded-lg text-xs transition-all',
-                        page === p ? 'bg-brand-500/20 text-brand-400' : 'text-slate-500 hover:text-slate-200'
-                      )}
+                      className={`w-7 h-7 rounded text-xs ${page === p ? 'bg-blue-600 text-white' : 'text-gray-600 hover:bg-gray-100'}`}
                     >
                       {p}
                     </button>
@@ -413,7 +400,7 @@ export default function StudentsPage() {
                 <button
                   onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
                   disabled={page === totalPages}
-                  className="p-1.5 rounded-lg text-slate-500 hover:text-slate-200 disabled:opacity-30 transition-all"
+                  className="p-1.5 rounded text-gray-500 hover:text-gray-800 disabled:opacity-30"
                 >
                   <ChevronRight size={16} />
                 </button>
