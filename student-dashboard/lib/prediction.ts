@@ -1,5 +1,3 @@
-import { GoogleGenerativeAI } from "@google/generative-ai";
-
 export interface PredictionInput {
   attendance: number; // 0-100
   study_hours: number; // 0-40 hrs/week
@@ -28,12 +26,9 @@ export interface PredictionResult {
 export async function predictPerformance(
   input: PredictionInput,
 ): Promise<PredictionResult> {
-  const apiKey = process.env.GEMINI_API_KEY;
+  const apiKey = process.env.OPENROUTER_AI_KEY;
   if (!apiKey)
-    throw new Error("GEMINI_API_KEY environment variable is not set");
-
-  const genAI = new GoogleGenerativeAI(apiKey);
-  const model = genAI.getGenerativeModel({ model: "gemini-2.5-flash" });
+    throw new Error("OPENROUTER_AI_KEY environment variable is not set");
 
   const prompt = `You are an academic performance prediction AI. Given the following student metrics, predict their academic performance.
 
@@ -69,10 +64,30 @@ Constraints:
 - predicted_gpa < 2.0  → performance_category = "At Risk"
 - score_breakdown values represent each factor's weighted contribution toward the overall score (max totals: attendance 25, study 20, assignments 25, participation 15, prev_gpa 10, eca 5)`;
 
-  const result = await model.generateContent(prompt);
-  const text = result.response.text().trim();
+  const response = await fetch(
+    "https://openrouter.ai/api/v1/chat/completions",
+    {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${apiKey}`,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        model: "deepseek/deepseek-v4-flash",
+        messages: [{ role: "user", content: prompt }],
+      }),
+    },
+  );
 
-  // Strip markdown code fences if Gemini wraps the response
+  if (!response.ok) {
+    const error = await response.text();
+    throw new Error(`OpenRouter API error: ${response.status} ${error}`);
+  }
+
+  const data = await response.json();
+  const text = (data.choices[0].message.content as string).trim();
+
+  // Strip markdown code fences if the model wraps the response
   const jsonText = text
     .replace(/^```(?:json)?\n?/, "")
     .replace(/\n?```$/, "")
