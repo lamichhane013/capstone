@@ -3,7 +3,7 @@
 import { useEffect, useState, useCallback } from 'react'
 import {
   Users, GraduationCap, Activity, AlertTriangle,
-  TrendingUp, RefreshCw, Download, Database
+  TrendingUp, RefreshCw, Download
 } from 'lucide-react'
 import { StatCard, Card, Badge, Skeleton, PageHeader } from '@/components/ui/Cards'
 import {
@@ -33,7 +33,6 @@ interface DashboardData {
 export default function DashboardPage() {
   const [data, setData] = useState<DashboardData | null>(null)
   const [loading, setLoading] = useState(true)
-  const [seeding, setSeeding] = useState(false)
 
   const fetchDashboard = useCallback(async () => {
     setLoading(true)
@@ -50,21 +49,6 @@ export default function DashboardPage() {
   }, [])
 
   useEffect(() => { fetchDashboard() }, [fetchDashboard])
-
-  const handleSeed = async () => {
-    setSeeding(true)
-    try {
-      const res = await fetch('/api/seed', { method: 'POST' })
-      const json = await res.json()
-      if (!res.ok) throw new Error(json.error)
-      toast.success(`Seeded ${json.count} sample students!`)
-      fetchDashboard()
-    } catch (err) {
-      toast.error('Seeding failed. Check Supabase connection.')
-    } finally {
-      setSeeding(false)
-    }
-  }
 
   const handleExport = async () => {
     try {
@@ -92,14 +76,6 @@ export default function DashboardPage() {
             >
               <Download size={15} />
               <span className="hidden sm:inline">Export</span>
-            </button>
-            <button
-              onClick={handleSeed}
-              disabled={seeding}
-              className="flex items-center gap-2 px-3 py-2 rounded text-sm text-gray-600 border border-gray-300 hover:bg-gray-50 disabled:opacity-50"
-            >
-              <Database size={15} />
-              <span className="hidden sm:inline">{seeding ? 'Seeding...' : 'Seed Data'}</span>
             </button>
             <button
               onClick={fetchDashboard}
