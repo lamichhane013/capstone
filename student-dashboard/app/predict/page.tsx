@@ -205,7 +205,7 @@ export default function PredictPage() {
                   onChange={(e) => update('grade')(e.target.value)}
                   className="w-full px-3 py-2 rounded border border-gray-300 text-gray-900 text-sm focus:outline-none focus:border-blue-500"
                 >
-                  {['9', '10', '11', '12'].map((g) => <option key={g}>Grade {g}</option>)}
+                  {['9', '10', '11', '12'].map((g) => <option key={g} value={g}>Grade {g}</option>)}
                 </select>
               </div>
               <div>
