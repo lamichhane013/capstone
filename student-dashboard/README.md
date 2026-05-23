@@ -6,7 +6,7 @@
 
 ## Features
 
-- **AI Performance Prediction** — Weighted scoring model predicts GPA, risk level, and performance category
+- **AI Performance Prediction** — Powered by DeepSeek V4 Flash via OpenRouter API; predicts GPA, risk level, and performance category
 - **Real-time Analytics Dashboard** — 7+ chart types powered by Recharts
 - **Student Management** — Full CRUD with search, filter, pagination
 - **CSV Export** — Export all student data
@@ -16,14 +16,15 @@
 
 ## Tech Stack
 
-| Layer | Technology |
-|-------|-----------|
-| Framework | Next.js 14 (App Router) |
-| Styling | Tailwind CSS |
-| Charts | Recharts |
-| Database | Supabase (PostgreSQL) |
-| Hosting | Vercel |
-| Language | TypeScript |
+| Layer         | Technology                           |
+| ------------- | ------------------------------------ |
+| Framework     | Next.js 14 (App Router)              |
+| Styling       | Tailwind CSS                         |
+| Charts        | Recharts                             |
+| Database      | Supabase (PostgreSQL)                |
+| AI Prediction | DeepSeek V4 Flash via OpenRouter API |
+| Hosting       | Vercel                               |
+| Language      | TypeScript                           |
 
 ## Quick Start
 
@@ -49,10 +50,14 @@ cp .env.example .env.local
 ```
 
 Edit `.env.local`:
+
 ```env
 NEXT_PUBLIC_SUPABASE_URL=https://your-project-ref.supabase.co
 NEXT_PUBLIC_SUPABASE_ANON_KEY=your_anon_key_here
+OPENROUTER_AI_KEY=your_openrouter_api_key_here
 ```
+
+> **Getting your OpenRouter API key:** Sign up at [openrouter.ai](https://openrouter.ai), go to **Keys** in your account settings, and create a new key. The prediction feature will not work without this key.
 
 ### 4. Run Development Server
 
@@ -110,23 +115,67 @@ student-performance-dashboard/
 
 ## AI Prediction Engine
 
-The prediction system uses a **weighted scoring algorithm** inspired by educational research:
+The prediction system delegates all inference to an **external Large Language Model** accessed through the [OpenRouter](https://openrouter.ai) API. No scoring logic runs locally — the application constructs a structured prompt from the student's metrics, sends it to the model, and parses the JSON response it returns.
 
-| Factor | Weight | Rationale |
-|--------|--------|-----------|
-| Attendance | 25% | Strongest predictor of academic success |
-| Assignment Score | 25% | Direct measure of learning effort |
-| Study Hours | 20% | Time investment correlates with performance |
-| Class Participation | 15% | Active learning improves retention |
-| Previous GPA | 10% | Historical performance indicator |
-| ECA Participation | 5% | Soft skills and holistic development |
+### Model
+
+| Property     | Value                                                     |
+| ------------ | --------------------------------------------------------- |
+| Provider     | [OpenRouter](https://openrouter.ai)                       |
+| Model        | `deepseek/deepseek-v4-flash`                              |
+| API Endpoint | `https://openrouter.ai/api/v1/chat/completions`           |
+| Auth         | Bearer token via `OPENROUTER_AI_KEY` environment variable |
+
+### How It Works
+
+1. **Input collection** — The `/api/predict` endpoint receives six student metrics from the client.
+2. **Prompt construction** — `lib/prediction.ts` builds a deterministic system prompt that describes each metric, its valid range, and the exact JSON schema the model must return.
+3. **API call** — The prompt is sent to OpenRouter using the `deepseek/deepseek-v4-flash` model. The model reasons holistically about the student's profile — it is not constrained to a fixed formula.
+4. **Response parsing** — The raw text response is stripped of any markdown code fences and parsed as JSON. The `predicted_gpa` is clamped to `[0.00, 4.00]` before being returned to the client.
+5. **No persistence** — The prediction result is returned directly in the API response and is never written to the database.
+
+### Input Factors
+
+The following six factors are passed verbatim to the model in the prompt:
+
+| Factor              | Scale           | Notes                                      |
+| ------------------- | --------------- | ------------------------------------------ |
+| Attendance          | 0 – 100%        | Percentage of classes attended             |
+| Study Hours         | 0 – 40 hrs/week | Self-reported weekly study time            |
+| Assignment Score    | 0 – 100%        | Average score across submitted assignments |
+| Class Participation | 0 – 100%        | Engagement level during lectures           |
+| Previous GPA        | 0.0 – 4.0       | GPA from the preceding term                |
+| ECA Participation   | 0 – 100%        | Involvement in extracurricular activities  |
+
+The model is instructed to return a `score_breakdown` object that reflects each factor's weighted contribution (attendance: max 25, study: max 20, assignments: max 25, participation: max 15, previous GPA: max 10, ECA: max 5), giving a total possible score of 100.
 
 ### Output
-- **Predicted GPA** — 0.0 to 4.0 scale
-- **Risk Level** — Low / Medium / High
-- **Performance Category** — Excellent / Good / Average / At Risk
-- **Confidence Score** — 60–95%
-- **Personalized Recommendations** — Up to 4 actionable insights
+
+The model returns — and the API forwards — the following fields:
+
+| Field                  | Type                                              | Description                                              |
+| ---------------------- | ------------------------------------------------- | -------------------------------------------------------- |
+| `predicted_gpa`        | `number`                                          | Predicted GPA on a 0.00 – 4.00 scale, two decimal places |
+| `risk_level`           | `"Low" \| "Medium" \| "High"`                     | Academic risk classification                             |
+| `performance_category` | `"Excellent" \| "Good" \| "Average" \| "At Risk"` | Categorical performance label                            |
+| `confidence`           | `integer 0–100`                                   | Model's self-reported confidence in the prediction       |
+| `recommendations`      | `string[]`                                        | Up to 4 personalized, actionable improvement suggestions |
+| `score_breakdown`      | `object`                                          | Per-factor score contributions (see table above)         |
+
+**Performance category thresholds enforced via prompt:**
+
+| Predicted GPA | Category  |
+| ------------- | --------- |
+| ≥ 3.5         | Excellent |
+| ≥ 3.0         | Good      |
+| ≥ 2.0         | Average   |
+| < 2.0         | At Risk   |
+
+### Error Handling
+
+- If `OPENROUTER_AI_KEY` is not set, `predictPerformance()` throws immediately before making any network call.
+- If the OpenRouter API returns a non-2xx status, the error body is captured and re-thrown with the HTTP status code included.
+- If the model wraps its JSON in markdown code fences (` ```json … ``` `), the fences are stripped before `JSON.parse()` is called.
 
 ---
 
@@ -142,7 +191,10 @@ vercel
 # Set environment variables
 vercel env add NEXT_PUBLIC_SUPABASE_URL
 vercel env add NEXT_PUBLIC_SUPABASE_ANON_KEY
+vercel env add OPENROUTER_AI_KEY
 ```
+
+> `OPENROUTER_AI_KEY` is a **server-only** variable (no `NEXT_PUBLIC_` prefix). It is never exposed to the browser.
 
 Or connect your GitHub repo directly at [vercel.com](https://vercel.com).
 
@@ -151,19 +203,21 @@ Or connect your GitHub repo directly at [vercel.com](https://vercel.com).
 ## API Reference
 
 ### Students
-| Method | Endpoint | Description |
-|--------|----------|-------------|
-| `GET` | `/api/students` | List with search/filter/pagination |
-| `POST` | `/api/students` | Create student |
-| `PATCH` | `/api/students/[id]` | Update student |
-| `DELETE` | `/api/students/[id]` | Delete student |
+
+| Method   | Endpoint             | Description                        |
+| -------- | -------------------- | ---------------------------------- |
+| `GET`    | `/api/students`      | List with search/filter/pagination |
+| `POST`   | `/api/students`      | Create student                     |
+| `PATCH`  | `/api/students/[id]` | Update student                     |
+| `DELETE` | `/api/students/[id]` | Delete student                     |
 
 ### Prediction & Analytics
-| Method | Endpoint | Description |
-|--------|----------|-------------|
-| `POST` | `/api/predict` | Run prediction (no DB save) |
-| `GET` | `/api/dashboard` | Aggregated dashboard stats |
-| `POST` | `/api/seed` | Seed 30 sample students |
+
+| Method | Endpoint         | Description                                   |
+| ------ | ---------------- | --------------------------------------------- |
+| `POST` | `/api/predict`   | Run AI prediction via OpenRouter (no DB save) |
+| `GET`  | `/api/dashboard` | Aggregated dashboard stats                    |
+| `POST` | `/api/seed`      | Seed 30 sample students                       |
 
 ---
 
