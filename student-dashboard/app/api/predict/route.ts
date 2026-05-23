@@ -1,6 +1,9 @@
 import { NextRequest, NextResponse } from "next/server";
 import { predictPerformance } from "@/lib/prediction";
 
+export const dynamic = "force-dynamic";
+export const revalidate = 0;
+
 // POST /api/predict — run AI prediction (does not save to DB)
 export async function POST(request: NextRequest) {
   try {

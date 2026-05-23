@@ -3,6 +3,9 @@ import { createClient } from "@supabase/supabase-js";
 import { generateSampleStudents } from "@/lib/prediction";
 import type { Database } from "@/lib/database.types";
 
+export const dynamic = "force-dynamic";
+export const revalidate = 0;
+
 // POST /api/seed — populate database with sample students
 export async function POST() {
   try {
