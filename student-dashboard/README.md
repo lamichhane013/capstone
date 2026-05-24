@@ -2,8 +2,7 @@
 
 > AI-powered student performance prediction and learning analytics platform built with Next.js 14, Supabase, and Recharts.
 
-![Dashboard Preview](https://capstone-omega-opal.vercel.app/dashboard)
-
+<!-- https://github.com/lamichhane013/capstone -->
 ## Features
 
 - **AI Performance Prediction** — Powered by DeepSeek V4 Flash via OpenRouter API; predicts GPA, risk level, and performance category
@@ -31,7 +30,7 @@
 ### 1. Clone & Install
 
 ```bash
-git clone https://github.com/yourusername/student-performance-dashboard.git
+git clone https://github.com/lamichhane013/capstone.git
 cd student-performance-dashboard
 npm install
 ```
