@@ -2,7 +2,7 @@
 
 > AI-powered student performance prediction and learning analytics platform built with Next.js 14, Supabase, and Recharts.
 
-![Dashboard Preview](https://via.placeholder.com/1200x600/080d14/38bdf8?text=EduPredict+Dashboard)
+![Dashboard Preview](https://capstone-omega-opal.vercel.app/dashboard)
 
 ## Features
 
@@ -67,9 +67,6 @@ npm run dev
 
 Open [http://localhost:3000](http://localhost:3000).
 
-### 5. Seed Sample Data
-
-Visit the **Dashboard** and click the **"Seed Data"** button to populate 30 realistic sample students.
 
 ---
 
