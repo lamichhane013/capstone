@@ -1,7 +1,6 @@
 import type { Metadata } from 'next'
 import './globals.css'
 import { Toaster } from 'react-hot-toast'
-import Sidebar from '@/components/ui/Sidebar'
 
 export const metadata: Metadata = {
   title: 'Student Dashboard',
@@ -17,12 +16,7 @@ export default function RootLayout({
   return (
     <html lang="en">
       <body>
-        <div className="flex h-screen overflow-hidden bg-gray-100">
-          <Sidebar />
-          <main className="flex-1 overflow-y-auto">
-            {children}
-          </main>
-        </div>
+        {children}
         <Toaster position="top-right" />
       </body>
     </html>
